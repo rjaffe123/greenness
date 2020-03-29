@@ -1,20 +1,15 @@
 # Import packages
 import requests as r
-import getpass, pprint, time, os, cgi
+import getpass, pprint, time, cgi
 import json
 import geopandas as gpd
-import os
+import os, shutil, glob
 import pandas as pd
 from shapely.geometry import Polygon
 import arcpy
 
 aprx = arcpy.mp.ArcGISProject(r"C:\Users\Rachael Jaffe\Documents\ArcGIS\Projects\MyProject1\MyProject1.aprx")
 print("project")
-m = aprx.listMaps("Map")[0]
-print('map')
-#add ontario shp file
-ontario_path = r"C:\Users\Rachael Jaffe\Documents\untitled\ontario.shp"
-m.addDataFromPath(ontario_path)
 
 # Set input directory, change working directory
 inDir = r"C:\Users\Rachael Jaffe\Documents\untitled"        # IMPORTANT: Update to reflect directory on your OS
@@ -117,9 +112,22 @@ if r.get('{}task/{}'.format(api, task_id), headers=head).json()['status'] == 'do
     tiff_files = {}  # Create empty dictionary
     for f in bundle['files']:
         tiff_files[f['file_id']] = f['file_name']  # Fill dictionary with file_id as keys and file_name as values
+
+    #create a map:
+    m = aprx.listMaps("Map")[0]
+
     rootdir = r"C:\Users\Rachael Jaffe\Documents\Postal codes linked to DA\csv_files"
     for subdir, dirs, files in os.walk(rootdir):
         for file in files:
+            #delete all previous map layers:
+            layers = m.listLayers()
+            for lyr in layers:
+                m.removeLayer(lyr)
+
+            # add ontario shp file as a layer
+            ontario_path = r"C:\Users\Rachael Jaffe\Documents\untitled\ontario.shp"
+            m.addDataFromPath(ontario_path)
+
             filepath_csv = os.path.join(subdir, file)
             year_csv = file[:4]
             overall_file = pd.read_csv(filepath_csv)
@@ -151,9 +159,27 @@ if r.get('{}task/{}'.format(api, task_id), headers=head).json()['status'] == 'do
 
                         final_file = pd.read_excel(final_file[:][0])
                         overall_file[day] = final_file["RASTERVALU"]
-                        overall_file.to_csv(inDir+r"FINAL_CSV_" + year_csv + ".csv")
-                        for lyr in m:
-                            if lyr != (m.listLayers()[0] | m.listLayers()[1]):
-                                m.removeLayer(lyr)
+                        overall_file.to_csv(inDir+r"\FINAL_CSV_" + year_csv + ".csv")
+
+
+                        #delete all tiff files in the temporary folder:
+                        for file_tiff in os.listdir(destDir):
+                            path = os.path.join(destDir, file_tiff)
+                            try:
+                                if os.path.isfile(path) or os.path.islink(path):
+                                    os.unlink(path)
+                                elif os.path.isdir(path):
+                                    shutil.rmtree(path)
+                            except Exception as e:
+                                print('Failed to delete %s. Reason: %s' % (path, e))
+
+                        #delete extract_by_mask files and extract_values files
+                        for filename in glob.glob(inDir +r'\extract_values*'):
+                            os.remove(filename)
+
+
+
+
+
 
 
