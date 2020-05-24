@@ -16,9 +16,9 @@ inDir = r"C:\Users\Rachael Jaffe\Documents\untitled"        # IMPORTANT: Update 
 os.chdir(inDir)                                      # Change to working directory
 api = r'https://lpdaacsvc.cr.usgs.gov/appeears/api/'  # Set the AρρEEARS API to a variable
 
-user = 'rjaffe'      # Input NASA Earthdata Login Username
-password = 'Rachaelj123'
-print('hello')
+user = 'username'      # Input NASA Earthdata Login Username
+password = 'password'
+
 token_response = r.post('{}login'.format(api), auth=(user, password)).json() # Insert API URL, call login service, provide credentials & return json
                                                           # Remove user and password information
 print(token_response)
